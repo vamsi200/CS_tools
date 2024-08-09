@@ -9,10 +9,8 @@ fn main() {
     if args.len() > 1 {
         let file_path = "output.log";
 
-        // Get the hostname from the arguments
         let hostname = &args[1];
 
-        // Define the commands to run
         let tools = vec![
             ("nslookup", hostname.to_string()),
             ("dnsrecon", format!("-d {}", hostname)),
@@ -48,14 +46,11 @@ fn main() {
     }
 }
 
-// Function to run a command and write output to a file
 fn run_command(
     command: &str,
     argument: &str,
     file_path: &str,
 ) -> Result<ExitStatus, std::io::Error> {
-    println!("[*] Running command: {} {}", command, argument);
-
     let output = Command::new(command).arg(argument).output()?;
 
     let mut file = OpenOptions::new()
