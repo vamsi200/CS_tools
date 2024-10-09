@@ -1,6 +1,6 @@
 #! /bin/bash
 
-LOG_FILE="output.log"
+LOG_FILE="script_output.log"
 
 log() {
     echo "$1" | tee -a "$LOG_FILE"
@@ -52,35 +52,33 @@ install_k3s() {
     sudo systemctl enable --now k3s 2>&1 | tee -a "$LOG_FILE"
 }
 
-
 install_kubernetes() {
-    log "[*] Installing Kubernetes and Kubectl.."
+    log "[*] Installing Kubernetes components (kubeadm, kubelet, kubectl).."
 
     if [[ $distro == "arch" ]]; then
         log "[*] Running `sudo pacman -S kubeadm kubectl kubelet`.."
         sudo pacman -S kubeadm kubectl kubelet 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to install Kubernetes"; exit 1; }
     elif [[ $distro == "ubuntu" || $distro == "debian" ]]; then
-        log "[*] Installing prerequisites.."
-        sudo apt-get install -y apt-transport-https ca-certificates curl 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to install prerequisites"; exit 1; }
         
-        log "[*] Adding Kubernetes GPG key.."
-        curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to add GPG key"; exit 1; }
+        KUBE_VERSION="v1.26.0" 
+        log "[*] Downloading Kubernetes binaries for version $KUBE_VERSION.."
+
+        for component in kubelet kubeadm kubectl; do
+            log "[*] Downloading $component.."
+            curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/${component}-linux-amd64"
+            sudo mv "${component}-linux-amd64" "/usr/local/bin/${component}"
+            sudo chmod +x "/usr/local/bin/${component}"
+        done
+
         
-        log "[*] Adding Kubernetes repository.."
-        echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to add repository"; exit 1; }
-        
-        sudo apt-get update 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to update package lists"; exit 1; }
-        
-        log "[*] Running `sudo apt-get install -y kubelet kubeadm kubectl`"
-        sudo apt-get install -y kubelet kubeadm kubectl 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to install Kubernetes components"; exit 1; }
+        log "[*] Enabling Kubelet.."
+        sudo systemctl enable --now kubelet 2>&1 | tee -a "$LOG_FILE" || { log "[*] Failed to enable Kubelet"; exit 1; }
     else
         log "[*] Unsupported distribution for Kubernetes installation"
         exit 1
     fi
 
     log "[*] Successfully Installed Kubernetes components."
-    log "[*] Enabling Kubelet.."
-    sudo systemctl enable --now kubelet 2>&1 | tee -a "$LOG_FILE"
 }
 
 get_distro
