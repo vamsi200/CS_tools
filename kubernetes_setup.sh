@@ -20,11 +20,13 @@ update_db() {
     log "[*] Updating Package Database.."
 
     if [[ $distro == "arch" ]]; then
-        sudo pacman -Sy > /dev/null 2>&1 || { log "[*] Failed to Update"; exit 1; }
+        echo "[*] Running sudo pacman -Sy"
+        sudo pacman -Sy || { echo "[*] Failed to update package database"; exit 1; }
     elif [[ $distro == "ubuntu" || $distro == "debian" ]]; then
-        sudo apt update > /dev/null 2>&1 || { log "[*] Failed to Update"; exit 1; }
+        echo "[*] Running sudo apt update"
+        sudo apt update || { echo "[*] Failed to update package database"; exit 1; }
     else
-        log "[*] Unsupported distribution for updating database"
+        echo "[*] Unsupported distribution for updating database"
         exit 1
     fi
 
@@ -35,29 +37,36 @@ install_k3s() {
     log "[*] Installing k3s.."
 
     if [[ $distro == "arch" ]]; then
-        yay -S --noconfirm k3s-bin > /dev/null 2>&1 || { log "[*] Failed to install k3s"; exit 1; }
+        echo "[*] Running yay -S --noconfirm k3s-bin"
+        yay -S --noconfirm k3s-bin || { echo "[*] Failed to install k3s"; exit 1; }
     elif [[ $distro == "ubuntu" || $distro == "debian" ]]; then
-        curl -sfL https://get.k3s.io | sh - > /dev/null 2>&1 || { log "[*] Failed to install k3s"; exit 1; }
+        echo "[*] Running curl -sfL https://get.k3s.io | sh -"
+        curl -sfL https://get.k3s.io | sh - || { echo "[*] Failed to install k3s"; exit 1; }
     else
-        log "[*] Unsupported distribution for k3s installation"
+        echo "[*] Unsupported distribution for k3s installation"
         exit 1
     fi
 
     log "[*] Successfully Installed k3s"
-    sudo systemctl enable --now k3s > /dev/null 2>&1
+    sudo systemctl enable --now k3s
 }
 
 install_kubectl() {
     log "[*] Installing kubectl.."
 
     if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
-        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" > /dev/null 2>&1 \
-        && sudo mv kubectl /usr/local/bin/ > /dev/null 2>&1 \
-        && sudo chmod +x /usr/local/bin/kubectl > /dev/null 2>&1 || { log "[*] Failed to download or install kubectl"; exit 1; }
+        echo "[*] Running curl -LO \"https://dl.k8s.io/release/\$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl\""
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" || { echo "[*] Failed to download kubectl"; exit 1; }
+        
+        echo "[*] Running sudo mv kubectl /usr/local/bin/"
+        sudo mv kubectl /usr/local/bin/ || { echo "[*] Failed to move kubectl"; exit 1; }
+
+        echo "[*] Running sudo chmod +x /usr/local/bin/kubectl"
+        sudo chmod +x /usr/local/bin/kubectl || { echo "[*] Failed to make kubectl executable"; exit 1; }
 
         log "[*] Successfully Installed kubectl."
     else
-        log "[*] Unsupported distribution for kubectl installation"
+        echo "[*] Unsupported distribution for kubectl installation"
         exit 1
     fi
 }
