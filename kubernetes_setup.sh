@@ -47,30 +47,22 @@ install_k3s() {
     sudo systemctl enable --now k3s > /dev/null 2>&1
 }
 
-install_kubernetes() {
-    log "[*] Installing Kubernetes components (kubeadm, kubelet, kubectl).."
+install_kubectl() {
+    log "[*] Installing kubectl.."
 
-    if [[ $distro == "arch" ]]; then
-        sudo pacman -S kubeadm kubectl kubelet > /dev/null 2>&1 || { log "[*] Failed to install Kubernetes"; exit 1; }
-    elif [[ $distro == "ubuntu" || $distro == "debian" ]]; then
-        KUBE_VERSION="v1.26.0"
+    if [[ $distro == "ubuntu" || $distro == "debian" ]]; then
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" > /dev/null 2>&1 \
+        && sudo mv kubectl /usr/local/bin/ > /dev/null 2>&1 \
+        && sudo chmod +x /usr/local/bin/kubectl > /dev/null 2>&1 || { log "[*] Failed to download or install kubectl"; exit 1; }
 
-        for component in kubelet kubeadm kubectl; do
-            curl -LO "https://storage.googleapis.com/kubernetes-release/release/${KUBE_VERSION}/${component}-linux-amd64" > /dev/null 2>&1 \
-            && sudo mv "${component}-linux-amd64" "/usr/local/bin/${component}" > /dev/null 2>&1 \
-            && sudo chmod +x "/usr/local/bin/${component}" > /dev/null 2>&1 || { log "[*] Failed to download or install $component"; exit 1; }
-        done
-
-        sudo systemctl enable --now kubelet > /dev/null 2>&1 || { log "[*] Failed to enable Kubelet"; exit 1; }
+        log "[*] Successfully Installed kubectl."
     else
-        log "[*] Unsupported distribution for Kubernetes installation"
+        log "[*] Unsupported distribution for kubectl installation"
         exit 1
     fi
-
-    log "[*] Successfully Installed Kubernetes components."
 }
 
 get_distro
 update_db
 install_k3s
-install_kubernetes
+install_kubectl
